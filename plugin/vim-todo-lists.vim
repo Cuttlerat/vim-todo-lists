@@ -30,7 +30,7 @@ function! VimTodoListsInit()
   endif
 
   if !exists('g:VimTodoListsDatesFormat')
-    let g:VimTodoListsDatesFormat = "%X, %d %b %Y"
+    let g:VimTodoListsDatesFormat = "%d-%m-%Y"
   endif
 
   setlocal tabstop=2
@@ -59,6 +59,7 @@ endfunction
 function! VimTodoListsSetItemDone(lineno)
   let l:line = getline(a:lineno)
   call setline(a:lineno, substitute(l:line, '^\(\s*- \)\[ \]', '\1[X]', ''))
+  call VimTodoListsAppendEndDate()
 endfunction
 
 
@@ -66,6 +67,7 @@ endfunction
 function! VimTodoListsSetItemNotDone(lineno)
   let l:line = getline(a:lineno)
   call setline(a:lineno, substitute(l:line, '^\(\s*- \)\[X\]', '\1[ ]', ''))
+  call VimTodoListsDeleteDate()
 endfunction
 
 
@@ -322,6 +324,10 @@ function! VimTodoListsSetNormalMode()
   nunmap <buffer> O
   nunmap <buffer> j
   nunmap <buffer> k
+  iunmap <buffer> <CR>
+  iunmap <buffer> <Tab>
+  iunmap <buffer> <S-Tab>
+  iunmap <buffer> <ESC>
   nnoremap <buffer> <Space> :VimTodoListsToggleItem<CR>
   vnoremap <buffer> <Space> :'<,'>VimTodoListsToggleItem<CR>
   noremap <buffer> <leader>e :silent call VimTodoListsSetItemMode()<CR>
@@ -336,7 +342,8 @@ function! VimTodoListsSetItemMode()
   nnoremap <buffer> k :VimTodoListsGoToPreviousItem<CR>
   nnoremap <buffer> <Space> :VimTodoListsToggleItem<CR>
   vnoremap <buffer> <Space> :VimTodoListsToggleItem<CR>
-  inoremap <buffer> <CR> <ESC>:call VimTodoListsAppendDate()<CR>A<CR><ESC>:VimTodoListsCreateNewItem<CR>
+  inoremap <buffer> <CR> <ESC>:call VimTodoListsAppendStartDate()<CR>A<CR><ESC>:VimTodoListsCreateNewItem<CR>
+  inoremap <buffer> <ESC> <ESC>:call VimTodoListsAppendStartDate()<CR>
   noremap <buffer> <leader>e :silent call VimTodoListsSetNormalMode()<CR>
   nnoremap <buffer> <Tab> :VimTodoListsIncreaseIndent<CR>
   nnoremap <buffer> <S-Tab> :VimTodoListsDecreaseIndent<CR>
@@ -346,11 +353,27 @@ function! VimTodoListsSetItemMode()
   inoremap <buffer> <S-Tab> <ESC>:VimTodoListsDecreaseIndent<CR>A
 endfunction
 
-" Appends date at the end of the line
-function! VimTodoListsAppendDate()
+" Appends start date at the end of the line
+function! VimTodoListsAppendStartDate()
   if(g:VimTodoListsDatesEnabled == 1)
     let l:date = strftime(g:VimTodoListsDatesFormat)
-    execute "s/$/ (" . l:date . ")"
+    execute "silent! s/\\([^\]]\\)$/\\1 \[" . l:date . "\]"
+  endif
+endfunction
+"
+" Appends end date at the end of the line
+function! VimTodoListsAppendEndDate()
+  if(g:VimTodoListsDatesEnabled == 1)
+    let l:date = strftime(g:VimTodoListsDatesFormat)
+    execute "s/$/\\1 - \[" . l:date . "\]"
+  endif
+endfunction
+
+" Deletes date from the end of the line
+function! VimTodoListsDeleteDate()
+  if(g:VimTodoListsDatesEnabled == 1)
+    let l:date = strftime(g:VimTodoListsDatesFormat)
+    execute "s/ - \\[" . l:date . "\\]$//"
   endif
 endfunction
 
